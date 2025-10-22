@@ -31,7 +31,7 @@ This project demonstrates how to build an [OpenAI Apps SDK](https://developers.o
    npm install
    ```
 
-   Use Node.js 18+ or Deno with Node compatibility. The project relies on [`sql.js`](https://sql.js.org/) which bundles SQLite to run in memory, so no native compilation is required.
+   Use Node.js 20.11+ (for the `--env-file` flag) or Deno with Node compatibility. The project relies on [`sql.js`](https://sql.js.org/) which bundles SQLite to run in memory, so no native compilation is required.
 
 2. **Run the MCP server locally**
 
