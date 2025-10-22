@@ -43,6 +43,16 @@ class DatabaseService {
         throw new Error(`Unknown plan: ${planId}`);
       }
       const db = new this.SQL.Database();
+      try {
+        db.run('PRAGMA foreign_keys = ON');
+      } catch (error) {
+        const message =
+          error instanceof Error
+            ? `Failed to enable foreign key enforcement: ${error.message}`
+            : 'Failed to enable foreign key enforcement.';
+        throw new Error(message);
+      }
+
       plan.sql.schema.forEach((statement) => {
         db.run(statement);
       });
