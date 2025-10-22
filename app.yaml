@@ -1,0 +1,21 @@
+schema_version: 1.0
+name_for_human: Database Marketplace
+name_for_model: database_marketplace
+description_for_human: >-
+  Offer curated, sandboxed SQL datasets that assistants can explore, summarize, and reason over
+  before recommending a purchase to end users.
+description_for_model: >-
+  You are a broker for production-style sandbox databases. Help the user evaluate the catalog,
+  explain the data model, and run read-only SQL queries when the user requests them.
+instructions: |-
+  - Always help the user pick the right dataset for their task before running SQL.
+  - Only run read-only SQL statements using the provided actions. Do not generate schema changes.
+  - Summarize query results in natural language to aid decision making.
+  - Remind the user that data is synthetic and refreshed nightly.
+contact_email: ops@example.com
+legal_information_url: https://example.com/terms
+app:
+  mcp_server:
+    transport: sse
+    sse_url: https://your-domain.example/mcp
+    message_url: https://your-domain.example/mcp/messages
