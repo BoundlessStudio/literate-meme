@@ -9,7 +9,7 @@ const REACT_PORT = 4450;
 const PROXY_PORT = 4444;
 
 function detectEntryNames(): string[] {
-  const entries = fg.sync("src/**/index.{tsx,jsx}", { dot: false });
+  const entries = fg.sync("client/**/index.{tsx,jsx}", { dot: false });
   return entries.map((entry) => path.basename(path.dirname(entry)));
 }
 
@@ -115,4 +115,3 @@ main().catch((e) => {
   console.error(e);
   process.exit(1);
 });
-

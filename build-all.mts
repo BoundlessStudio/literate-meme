@@ -7,12 +7,12 @@ import crypto from "crypto";
 import pkg from "./package.json" with { type: "json" };
 import tailwindcss from "@tailwindcss/vite";
 
-const entries = fg.sync("src/**/index.{tsx,jsx}");
+const entries = fg.sync("client/**/index.{tsx,jsx}");
 const outDir = "assets";
 
 const PER_ENTRY_CSS_GLOB = "**/*.{css,pcss,scss,sass}";
 const PER_ENTRY_CSS_IGNORE = "**/*.module.*".split(",").map((s) => s.trim());
-const GLOBAL_CSS_LIST = [path.resolve("src/index.css")];
+const GLOBAL_CSS_LIST = [path.resolve("client/index.css")];
 
 const targets: string[] = [
   "todo",
