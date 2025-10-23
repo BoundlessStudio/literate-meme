@@ -1,76 +1,156 @@
-# Database Marketplace (OpenAI Apps SDK sample)
+# Apps SDK Examples Gallery
 
-This project demonstrates how to build an [OpenAI Apps SDK](https://developers.openai.com/apps-sdk) integration that lets an agent sell pre-hosted sandbox databases. The assistant can browse the catalog, create lightweight purchase orders, and run read-only SQL queries against curated datasets via an [MCP](https://modelcontextprotocol.io/) server that also renders an inline marketplace component.
+[![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-## Features
+This repository showcases example UI components to be used with the Apps SDK, as well as example MCP servers that expose a collection of components as tools.
+It is meant to be used as a starting point and source of inspiration to build your own apps for ChatGPT.
 
-- **Catalog discovery** – list available database plans with pricing, schema context, and sample queries.
-- **Purchase workflow** – capture structured purchase intents and return order receipts for the hosting team.
-- **Hosted SQL execution** – run read-only SQL against synthetic datasets (CRM, e-commerce, IoT telemetry) so the agent can answer product questions with live results.
-- **MCP-first** – exposes the catalog, ordering, and SQL tools through the official `@modelcontextprotocol/sdk` server plus a custom HTML component.
+## MCP + Apps SDK overview
 
-## Project structure
+The Model Context Protocol (MCP) is an open specification for connecting large language model clients to external tools, data, and user interfaces. An MCP server exposes tools that a model can call during a conversation and returns results according to the tool contracts. Those results can include extra metadata—such as inline HTML—that the Apps SDK uses to render rich UI components (widgets) alongside assistant messages.
 
+Within the Apps SDK, MCP keeps the server, model, and UI in sync. By standardizing the wire format, authentication, and metadata, it lets ChatGPT reason about your connector the same way it reasons about built-in tools. A minimal MCP integration for Apps SDK implements three capabilities:
+
+1. **List tools** – Your server advertises the tools it supports, including their JSON Schema input/output contracts and optional annotations (for example, `readOnlyHint`).
+2. **Call tools** – When a model selects a tool, it issues a `call_tool` request with arguments that match the user intent. Your server executes the action and returns structured content the model can parse.
+3. **Return widgets** – Alongside structured content, return embedded resources in the response metadata so the Apps SDK can render the interface inline in the Apps SDK client (ChatGPT).
+
+Because the protocol is transport agnostic, you can host the server over Server-Sent Events or streaming HTTP—Apps SDK supports both.
+
+The MCP servers in this demo highlight how each tool can light up widgets by combining structured payloads with `_meta.openai/outputTemplate` metadata returned from the MCP servers.
+
+## Repository structure
+
+- `src/` – Source for each widget example.
+- `assets/` – Generated HTML, JS, and CSS bundles after running the build step.
+- `pizzaz_server_node/` – MCP server implemented with the official TypeScript SDK.
+- `pizzaz_server_python/` – Python MCP server that returns the Pizzaz widgets.
+- `solar-system_server_python/` – Python MCP server for the 3D solar system widget.
+- `build-all.mts` – Vite build orchestrator that produces hashed bundles for every widget entrypoint.
+
+## Prerequisites
+
+- Node.js 18+
+- pnpm (recommended) or npm/yarn
+- Python 3.10+ (for the Python MCP server)
+
+## Install dependencies
+
+Clone the repository and install the workspace dependencies:
+
+```bash
+pnpm install
 ```
-├── app.yaml               # Apps SDK manifest pointing at the MCP server
-├── assets/database-marketplace.html  # Inline widget rendered by ChatGPT
-├── config/catalog.js      # Database plan definitions, schema, and seed data
-├── src/
-│   ├── server.js          # MCP SSE server wiring tools and resources
-│   └── services/
-│       ├── databaseService.js  # Initializes sql.js engines per plan
-│       └── orderService.js     # In-memory order receipts
-└── package.json
+
+> Using npm or yarn? Install the root dependencies with your preferred client and adjust the commands below accordingly.
+
+## Build the components gallery
+
+The components are bundled into standalone assets that the MCP servers serve as reusable UI resources.
+
+```bash
+pnpm run build
 ```
 
-## Getting started
+This command runs `build-all.mts`, producing versioned `.html`, `.js`, and `.css` files inside `assets/`. Each widget is wrapped with the CSS it needs so you can host the bundles directly or ship them with your own server.
 
-1. **Install dependencies**
+To iterate on your components locally, you can also launch the Vite dev server:
 
-   ```bash
-   npm install
-   ```
+```bash
+pnpm run dev
+```
 
-   Use Node.js 20.11+ (for the `--env-file` flag) or Deno with Node compatibility. The project relies on [`sql.js`](https://sql.js.org/) which bundles SQLite to run in memory, so no native compilation is required.
+## Serve the static assets
 
-2. **Run the MCP server locally**
+If you want to preview the generated bundles without the MCP servers, start the static file server after running a build:
 
-   ```bash
-   npm run dev
-   ```
+```bash
+pnpm run serve
+```
 
-   The SSE server boots on <http://localhost:8000> by default and seeds each plan with synthetic data.
+The assets are exposed at [`http://localhost:4444`](http://localhost:4444) with CORS enabled so that local tooling (including MCP inspectors) can fetch them.
 
-3. **Verify with MCP Inspector**
+## Run the MCP servers
 
-   - Start [MCP Inspector](https://modelcontextprotocol.io/inspector) and connect it to `http://localhost:8000/mcp` with message posts proxied to `http://localhost:8000/mcp/messages`.
-   - List tools and resources to confirm the database marketplace widget renders with structured content.
+The repository ships several demo MCP servers that highlight different widget bundles:
 
-4. **Expose the server to the Apps SDK**
+- **Pizzaz (Node & Python)** – pizza-inspired collection of tools and components
+- **Solar system (Python)** – 3D solar system viewer
 
-   - Update `app.yaml` with your deployed HTTPS base URL and contact details.
-   - Publish the manifest and SSE endpoints following the [Apps SDK deployment guide](https://developers.openai.com/apps-sdk).
-   - Create an App in the OpenAI UI, point it at `app.yaml`, and allow the assistant to call the MCP tools.
+Every tool response includes plain text content, structured JSON, and `_meta.openai/outputTemplate` metadata so the Apps SDK can hydrate the matching widget.
 
-5. **Playbook for agents**
+### Pizzaz Node server
 
-   - Call `list_database_plans` to summarize available datasets and pricing.
-   - Use `describe_database_plan` to fetch schema context and sample queries for a specific plan.
-   - When the user is ready, invoke `purchase_database_plan` with buyer details to log the purchase intent.
-   - For ad-hoc analytics, call `run_database_query` with a read-only `SELECT` statement and summarize the results back to the user.
+```bash
+cd pizzaz_server_node
+pnpm start
+```
 
-## Security notes
+### Pizzaz Python server
 
-- SQL execution is restricted to single `SELECT` statements. Attempts to run mutating commands return validation errors.
-- Order receipts are held in memory only; plug in your billing or CRM system before using in production.
-- Add authentication (API keys or OAuth) before exposing the service publicly.
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -r pizzaz_server_python/requirements.txt
+uvicorn pizzaz_server_python.main:app --port 8000
+```
+
+### Solar system Python server
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -r solar-system_server_python/requirements.txt
+uvicorn solar-system_server_python.main:app --port 8000
+```
+
+You can reuse the same virtual environment for all Python servers—install the dependencies once and run whichever entry point you need.
+
+## Testing in ChatGPT
+
+To add these apps to ChatGPT, enable [developer mode](https://platform.openai.com/docs/guides/developer-mode), and add your apps in Settings > Connectors.
+
+To add your local server without deploying it, you can use a tool like [ngrok](https://ngrok.com/) to expose your local server to the internet.
+
+For example, once your mcp servers are running, you can run:
+
+```bash
+ngrok http 8000
+```
+
+You will get a public URL that you can use to add your local server to ChatGPT in Settings > Connectors.
+
+For example: `https://<custom_endpoint>.ngrok-free.app/mcp`
+
+Once you add a connector, you can use it in ChatGPT conversations.
+
+You can add your app to the conversation context by selecting it in the "More" options.
+
+![more-chatgpt](https://github.com/user-attachments/assets/26852b36-7f9e-4f48-a515-aebd87173399)
+
+You can then invoke tools by asking something related. For example, for the Pizzaz app, you can ask "What are the best pizzas in town?".
 
 ## Next steps
 
-- Persist orders in a database and emit webhooks for downstream invoicing.
-- Attach per-customer credentials so each buyer gets isolated compute and storage.
-- Layer usage metering and alerting for long-running SQL jobs.
+- Customize the widget data: edit the handlers in `pizzaz_server_node/src`, `pizzaz_server_python/main.py`, or the solar system server to fetch data from your systems.
+- Create your own components and add them to the gallery: drop new entries into `src/` and they will be picked up automatically by the build script.
+
+### Deploy your MCP server
+
+You can use the cloud environment of your choice to deploy your MCP server.
+
+Include this in the environment variables:
+
+```
+BASE_URL=https://your-server.com
+```
+
+This will be used to generate the HTML for the widgets so that they can serve static assets from this hosted url.
+
+## Contributing
+
+You are welcome to open issues or submit PRs to improve this app, however, please note that we may not review all suggestions.
 
 ## License
 
-[MIT](LICENSE)
+This project is licensed under the MIT License. See [LICENSE](./LICENSE) for details.
